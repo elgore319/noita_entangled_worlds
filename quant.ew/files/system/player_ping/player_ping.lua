@@ -49,7 +49,11 @@ function module.on_world_update()
         local x, y
         if GameGetIsGamepadConnected() then
             local tx, ty
-            if ctx.spectating_over_peer_id == nil or ctx.spectating_over_peer_id == ctx.my_id then
+            if
+                ctx.spectating_over_peer_id == nil
+                or ctx.spectating_over_peer_id == ctx.my_id
+                or ctx.players[ctx.spectating_over_peer_id] == nil
+            then
                 tx, ty = EntityGetTransform(ctx.my_player.entity)
             else
                 tx, ty = EntityGetTransform(ctx.players[ctx.spectating_over_peer_id].entity)

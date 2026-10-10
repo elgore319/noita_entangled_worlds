@@ -679,9 +679,36 @@ function player_fns.get_current_slot(player_data)
     end
 end
 
+local function item_is_in_slot(item, slot_x, slot_y, is_wand)
+    if item == nil or item == 0 or not EntityGetIsAlive(item) then
+        return false
+    end
+    local itemComp = EntityGetFirstComponentIncludingDisabled(item, "ItemComponent")
+    if itemComp == nil then
+        return false
+    end
+    local item_slot_x, item_slot_y = ComponentGetValue2(itemComp, "inventory_slot")
+    if item_slot_x ~= slot_x or item_slot_y ~= slot_y then
+        return false
+    end
+    local ability_comp = EntityGetFirstComponentIncludingDisabled(item, "AbilityComponent")
+    local item_is_wand = ability_comp ~= nil and ComponentGetValue2(ability_comp, "use_gun_script") == true
+    return item_is_wand == is_wand
+end
+
 function player_fns.set_current_slot(slot_data, player_data)
     local is_wand, slot_x, slot_y = slot_data[1], slot_data[2], slot_data[3]
     if player_data.entity and EntityGetIsAlive(player_data.entity) then
+        -- This runs every frame for every remote player. In the common case the
+        -- right item is already held, so check that before walking the whole
+        -- inventory.
+        local inventory2Comp = EntityGetFirstComponentIncludingDisabled(player_data.entity, "Inventory2Component")
+        if
+            inventory2Comp ~= nil
+            and item_is_in_slot(ComponentGetValue2(inventory2Comp, "mActiveItem"), slot_x, slot_y, is_wand)
+        then
+            return true
+        end
         local items = GameGetAllInventoryItems(player_data.entity) or {}
         for i, item in ipairs(items) do
             -- check id

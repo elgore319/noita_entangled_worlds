@@ -110,39 +110,36 @@ function module.on_world_update()
         end
         last_spectate = ctx.spectating_over_peer_id
     end
-    for peer_id, _ in pairs(ctx.players) do
-        for shield_id, shield in pairs(shield_entities) do
-            if ctx.players[shield_id] == nil then
-                shield_entities[shield_id] = nil
-                goto continue
-            end
-            if peer_id == shield[1] then
-                local shield_ent = shield[2]
-                local my_x, my_y = EntityGetTransform(ctx.players[peer_id].entity)
-                local his_x, his_y
-                if shield_id == ctx.my_id then
-                    if GameGetIsGamepadConnected() then
-                        his_x, his_y = InputGetJoystickAnalogStick(0, 1)
+    -- One pass over the shields; each shield already knows which player it
+    -- is on, so there is no need to loop over every player as well.
+    for shield_id, shield in pairs(shield_entities) do
+        local target = ctx.players[shield[1]]
+        if ctx.players[shield_id] == nil then
+            shield_entities[shield_id] = nil
+        elseif target ~= nil then
+            local shield_ent = shield[2]
+            local my_x, my_y = EntityGetTransform(target.entity)
+            local his_x, his_y
+            if shield_id == ctx.my_id then
+                if GameGetIsGamepadConnected() then
+                    his_x, his_y = InputGetJoystickAnalogStick(0, 1)
+                    if my_x ~= nil then
                         his_x, his_y = his_x * 60 + my_x, his_y * 60 + my_y
-                    else
-                        his_x, his_y = DEBUG_GetMouseWorld()
                     end
                 else
-                    his_x, his_y = ctx.players[shield_id].mouse_x, ctx.players[shield_id].mouse_y
+                    his_x, his_y = DEBUG_GetMouseWorld()
                 end
-                if his_x == nil or my_x == nil then
-                    goto continue
-                end
+            else
+                his_x, his_y = ctx.players[shield_id].mouse_x, ctx.players[shield_id].mouse_y
+            end
+            if his_x ~= nil and my_x ~= nil then
                 local dx, dy = his_x - my_x, his_y - my_y
-                if dx * dx + dy * dy > 350 * 350 then
-                    goto continue
+                if dx * dx + dy * dy <= 350 * 350 then
+                    local x, y = EntityGetTransform(shield_ent)
+                    EntitySetTransform(shield_ent, x, y, math.atan2(dy, dx))
                 end
-                local angle = math.atan2(dy, dx)
-                local x, y = EntityGetTransform(shield_ent)
-                EntitySetTransform(shield_ent, x, y, angle)
             end
         end
-        ::continue::
     end
 end
 

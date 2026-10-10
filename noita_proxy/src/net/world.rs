@@ -658,6 +658,16 @@ impl WorldManager {
         self.chunk_last_update.clear();
         self.chunk_state.clear();
         self.is_storage_recent.clear();
+        self.clear_explosion_backlog();
+    }
+
+    /// Pending explosions for unloaded chunks: `explosion_pointer` indexes
+    /// into `explosion_data`, which indexes into `explosion_heap`, so the three
+    /// are always cleared together.
+    fn clear_explosion_backlog(&mut self) {
+        self.explosion_pointer.clear();
+        self.explosion_data.clear();
+        self.explosion_heap.clear();
     }
 
     pub(crate) fn get_emitted_msgs(&mut self) -> Vec<MessageRequest<WorldNetMessage>> {
@@ -2076,6 +2086,12 @@ impl WorldManager {
             } else {
                 self.explosion_data[i].2 = ExTarget::Radius(0)
             }
+        }
+        // Once no unloaded chunk is waiting on an explosion, nothing indexes
+        // into the buffers any more, so free them instead of letting them grow
+        // for the whole session.
+        if self.explosion_pointer.is_empty() {
+            self.clear_explosion_backlog();
         }
     }
     #[allow(clippy::too_many_arguments)]

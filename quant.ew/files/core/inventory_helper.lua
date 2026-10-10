@@ -251,7 +251,13 @@ local function get_item(itemInfo, inv, player, local_ent)
         remove_non_send(item)
         item = EZWand(item)
     elseif itemInfo.peer_id ~= nil then
-        item = ctx.players[itemInfo.peer_id].entity
+        -- The held (polymorphed) player may have left; skip them instead of
+        -- erroring out halfway through rebuilding the inventory.
+        local held = ctx.players[itemInfo.peer_id]
+        if held == nil or held.entity == nil or not EntityGetIsAlive(held.entity) then
+            return
+        end
+        item = held.entity
     else
         item = inventory_helper.deserialize_single_item(itemInfo.data, local_ent)
         remove_non_send(item)

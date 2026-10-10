@@ -1305,7 +1305,8 @@ impl LocalDiffModel {
             };
             let drops_gold = if let Some(info) = self.entity_entries.remove(&lid) {
                 to_untrack.push((info.gid, lid));
-                info.current.unwrap().drops_gold
+                // ewext aborts Noita on panic, so don't unwrap here.
+                info.current.map(|c| c.drops_gold).unwrap_or(false)
             } else {
                 false
             };
@@ -1599,8 +1600,11 @@ impl LocalDiffModel {
         for (lid, EntityEntryPair { current, gid, .. }) in self.entity_entries.iter_mut() {
             //res.push(EntityUpdate::CurrentEntity(*lid));
             //*last = Some(current.clone());
+            let Some(info) = std::mem::take(current) else {
+                continue;
+            };
             self.init_buffer.push(EntityInit {
-                info: std::mem::take(current).unwrap(),
+                info,
                 lid: *lid,
                 gid: *gid,
             });
@@ -1608,7 +1612,11 @@ impl LocalDiffModel {
     }
     pub(crate) fn uninit(&mut self) {
         for EntityInit { info, lid, .. } in self.init_buffer.drain(..) {
-            self.entity_entries.get_mut(&lid).unwrap().current = Some(info);
+            // The entry may have been removed (killed or grabbed) since
+            // make_init; a panic here would abort Noita.
+            if let Some(entry) = self.entity_entries.get_mut(&lid) {
+                entry.current = Some(info);
+            }
         }
     }
 
@@ -1635,7 +1643,12 @@ impl LocalDiffModel {
             return Ok(());
         };
         if let Ok(entity) = self.tracker.entity_by_lid(lid) {
-            if info.current.as_ref().unwrap().kind == EntityKind::Item {
+            // Runs on network input; `current` can be None while the entity
+            // is lent to the init buffer, and a panic here would abort Noita.
+            let Some(current) = info.current.as_ref() else {
+                return Ok(());
+            };
+            if current.kind == EntityKind::Item {
                 self.tracker.pending_localize.push((lid, source));
                 safe_entitykill(entity_manager.handle(entity)?);
                 // "Untrack" entity

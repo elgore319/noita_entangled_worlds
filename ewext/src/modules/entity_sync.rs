@@ -188,6 +188,17 @@ impl EntitySync {
         err2?;
         Ok(())
     }
+    /// `spawn_once` is only drained when the camera comes near an entry, and
+    /// every peer adds to it for kills out of our range, so it would otherwise
+    /// grow for the whole session. Keep the newest entries.
+    fn cap_spawn_once(&mut self) {
+        const MAX_SPAWN_ONCE: usize = 4096;
+        let len = self.spawn_once.len();
+        if len > MAX_SPAWN_ONCE {
+            self.spawn_once.drain(..len - MAX_SPAWN_ONCE);
+        }
+    }
+
     pub(crate) fn spawn_once(
         &mut self,
         ctx: &mut ModuleCtx,
@@ -206,8 +217,8 @@ impl EntitySync {
             // the tail comes into range. It is also not the mechanical change it looks like --
             // the loop body borrows `self.spawn_once[i]` while calling `&mut self` methods.
             //
-            // The bigger problem here is that `spawn_once` is only drained when the camera comes
-            // within range and nothing ever prunes it, so it grows unboundedly over a session.
+            // `spawn_once` is only drained when the camera comes within range; its size is
+            // bounded by `cap_spawn_once`.
             let batch_size = (len / 20).max(1);
             let start_index = (frame_num % 20) * batch_size;
             let end_index = (start_index + batch_size).min(len);
@@ -450,7 +461,10 @@ impl EntitySync {
                     }
                 }
             }
-            RemoteDes::SpawnOnce(pos, data) => self.spawn_once.push((pos, data)),
+            RemoteDes::SpawnOnce(pos, data) => {
+                self.spawn_once.push((pos, data));
+                self.cap_spawn_once();
+            }
             /*RemoteDes::AllEntities(lids) => self
             .remote_models
             .entry(source)
@@ -459,7 +473,10 @@ impl EntitySync {
             RemoteDes::CameraPos(pos) => {
                 cam_pos.insert(source, pos);
             }
-            RemoteDes::DeadEntities(vec) => self.spawn_once.extend(vec),
+            RemoteDes::DeadEntities(vec) => {
+                self.spawn_once.extend(vec);
+                self.cap_spawn_once();
+            }
             RemoteDes::InterestRequest(interest_request) => self
                 .interest_tracker
                 .handle_interest_request(source, interest_request),

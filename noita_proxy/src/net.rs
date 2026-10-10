@@ -304,11 +304,27 @@ impl NetManager {
     }
 
     pub(crate) fn send(&self, peer: OmniPeerId, msg: &NetMsg, reliability: Reliability) {
-        if peer == self.peer.my_id() {
-            // Shortcut for sending stuff to myself
-            let _ = self.loopback_channel.0.send(msg.clone());
-        } else {
-            let encoded = lz4_flex::compress_prepend_size(&bitcode::encode(msg));
+        self.send_many(std::iter::once(peer), msg, reliability)
+    }
+
+    /// Sends the same message to several peers. The message is encoded and
+    /// compressed once, instead of once per peer.
+    pub(crate) fn send_many(
+        &self,
+        peers: impl IntoIterator<Item = OmniPeerId>,
+        msg: &NetMsg,
+        reliability: Reliability,
+    ) {
+        let my_id = self.peer.my_id();
+        let mut encoded: Option<Vec<u8>> = None;
+        for peer in peers {
+            if peer == my_id {
+                // Shortcut for sending stuff to myself
+                let _ = self.loopback_channel.0.send(msg.clone());
+                continue;
+            }
+            let encoded = encoded
+                .get_or_insert_with(|| lz4_flex::compress_prepend_size(&bitcode::encode(msg)));
             let len = encoded.len();
             if let Err(err) = self.peer.send(peer, encoded.clone(), reliability) {
                 if cfg!(debug_assertions) {
@@ -985,9 +1001,7 @@ impl NetManager {
         let request: MessageRequest<NetMsg> = request.into();
         match request.dst {
             Destination::Peers(peers) => {
-                for peer in peers {
-                    self.send(peer, &request.msg, request.reliability);
-                }
+                self.send_many(peers, &request.msg, request.reliability);
             }
             Destination::Peer(peer) => {
                 self.send(peer, &request.msg, request.reliability);
@@ -1260,17 +1274,7 @@ impl NetManager {
                 match destination {
                     Destination::Peers(peers) => {
                         if !peers.is_empty() {
-                            if peers.len() == 1 {
-                                self.send(peers[0], &NetMsg::RemoteMsg(message), reliability)
-                            } else {
-                                for peer in peers {
-                                    self.send(
-                                        peer,
-                                        &NetMsg::RemoteMsg(message.clone()),
-                                        reliability,
-                                    )
-                                }
-                            }
+                            self.send_many(peers, &NetMsg::RemoteMsg(message), reliability)
                         }
                     }
                     Destination::Peer(peer) => {
@@ -1352,7 +1356,10 @@ impl NetManager {
                 if let (Some(x), Some(y)) = (x, y) {
                     self.player_pos.0.store(x, Ordering::Relaxed);
                     self.player_pos.1.store(y, Ordering::Relaxed);
-                    self.broadcast(&NetMsg::PlayerPosition(x, y, b, d), Reliability::Reliable);
+                    // Sent every few frames and only the latest value matters, so a
+                    // lost packet is harmless. Reliable here would queue stale
+                    // positions behind real traffic once a peer's bandwidth fills up.
+                    self.broadcast(&NetMsg::PlayerPosition(x, y, b, d), Reliability::Unreliable);
                     self.send(
                         self.peer.my_id(),
                         &NetMsg::PlayerPosition(x, y, b, d),
