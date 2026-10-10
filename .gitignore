@@ -8,3 +8,4 @@ save_state
 # Nix
 /result
 /result-man
+quant.ew/ew_seed_carryover.bin

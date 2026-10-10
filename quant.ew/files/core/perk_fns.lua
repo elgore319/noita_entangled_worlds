@@ -303,4 +303,22 @@ function perk_fns.on_world_update()
     end
 end
 
+-- Gives the local player perks until they have the counts in `perk_data`
+-- (perk id -> count), as if they had picked them up.
+function perk_fns.give_perks_to_local_player(perk_data)
+    dofile_once("data/scripts/perks/perk.lua")
+    lazyload()
+    local current = perk_fns.get_my_perks()
+    for perk_id, count in pairs(perk_data) do
+        local perk_info = get_perk_with_id(perk_list, perk_id)
+        if perk_info == nil then
+            print("Unknown perk id: " .. perk_id)
+        else
+            for _ = (current[perk_id] or 0) + 1, count do
+                spawn_perk(perk_info, true)
+            end
+        end
+    end
+end
+
 return perk_fns
