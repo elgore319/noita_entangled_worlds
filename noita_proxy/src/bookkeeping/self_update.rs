@@ -160,11 +160,11 @@ impl SelfUpdateManager {
 
 fn proxy_asset_name() -> &'static str {
     if cfg!(target_os = "windows") {
-        "noita_proxy-win.zip"
+        "goyim_proxy-win.zip"
     } else if cfg!(target_os = "macos") {
-        "noita_proxy-macos-arm64.zip"
+        "goyim_proxy-macos-arm64.zip"
     } else {
-        "noita_proxy-linux.zip"
+        "goyim_proxy-linux.zip"
     }
 }
 

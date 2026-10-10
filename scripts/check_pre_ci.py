@@ -20,7 +20,7 @@ def generate_notes(tag):
         notes.p("No pull requests have been accepted in this release.")
 
     notes.title("Installation")
-    notes.p("Download and unpack `noita_proxy-win.zip` or `noita_proxy-linux.zip`, depending on your OS. After that, launch the proxy.")
+    notes.p("Download and unpack `goyim_proxy-win.zip` or `goyim_proxy-linux.zip`, depending on your OS. After that, launch the proxy.")
     notes.p("Proxy is able to download and install the mod automatically. There is no need to download the mod (`quant.ew.zip`) manually.")
     notes.p("""You'll be prompted for a path to `noita.exe` when launching the proxy for the first time.
 It should be detected automatically as long as you use steam version of the game and steam is launched.

@@ -77,8 +77,8 @@ def make_release_assets():
     os.makedirs("target", exist_ok=True)
     os.makedirs("target/tmp", exist_ok=True)
 
-    try_remove("target/noita_proxy-win.zip")
-    try_remove("target/noita_proxy-linux.zip")
+    try_remove("target/goyim_proxy-win.zip")
+    try_remove("target/goyim_proxy-linux.zip")
     try_remove("target/quant.ew.zip")
 
     print("Extracting steam dylib...")
@@ -87,13 +87,13 @@ def make_release_assets():
 
     print("Writing win release...")
 
-    with ZipFile("target/noita_proxy-win.zip", "w") as release:
+    with ZipFile("target/goyim_proxy-win.zip", "w") as release:
         release.write("noita_proxy/target/x86_64-pc-windows-gnu/release/noita_proxy.exe", arcname="noita_proxy.exe", compress_type=COMPRESS_TYPE, compresslevel=COMPRESS_LEVEL)
         release.write("redist/steam_api64.dll", arcname="steam_api64.dll", compress_type=COMPRESS_TYPE, compresslevel=COMPRESS_LEVEL)
 
     print("Writing linux release...")
 
-    with ZipFile("target/noita_proxy-linux.zip", "w") as release:
+    with ZipFile("target/goyim_proxy-linux.zip", "w") as release:
         release.write("noita_proxy/target/x86_64-unknown-linux-gnu/release-lto/noita_proxy", arcname="noita_proxy.x86_64", compress_type=COMPRESS_TYPE, compresslevel=COMPRESS_LEVEL)
         release.write("redist/libsteam_api.so", arcname="libsteam_api.so", compress_type=COMPRESS_TYPE, compresslevel=COMPRESS_LEVEL)
 
@@ -145,7 +145,7 @@ def main():
         notes.p("No pull requests have been accepted in this release.")
 
     notes.title("Installation")
-    notes.p("Download and unpack `noita_proxy-win.zip` or `noita_proxy-linux.zip`, depending on your OS. After that, launch the proxy.")
+    notes.p("Download and unpack `goyim_proxy-win.zip` or `goyim_proxy-linux.zip`, depending on your OS. After that, launch the proxy.")
     notes.p("Proxy is able to download and install the mod automatically. There is no need to download the mod (`quant.ew.zip`) manually.")
     notes.p("""You'll be prompted for a path to `noita.exe` when launching the proxy for the first time.
 It should be detected automatically as long as you use steam version of the game and steam is launched.
@@ -163,7 +163,7 @@ It should be detected automatically as long as you use steam version of the game
 
     title = input("Release title: ")
 
-    subprocess.call(["gh", "release", "create", tag, "--title", f"{tag} - {title}", "-F", notes_path, "./target/noita_proxy-linux.zip", "./target/noita_proxy-win.zip", "./target/quant.ew.zip"])
+    subprocess.call(["gh", "release", "create", tag, "--title", f"{tag} - {title}", "-F", notes_path, "./target/goyim_proxy-linux.zip", "./target/goyim_proxy-win.zip", "./target/quant.ew.zip"])
 
 if __name__ == "__main__":
     main()

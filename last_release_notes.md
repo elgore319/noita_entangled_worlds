@@ -6,4 +6,4 @@ The proxy now updates itself and downloads the mod from this repository's releas
 
 ### Installation
 
-Download `noita_proxy-win.zip`, `noita_proxy-linux.zip` or `noita_proxy-macos.zip` below, unpack it and launch the proxy. The proxy can download and install the mod automatically.
+Download `goyim_proxy-win.zip`, `goyim_proxy-linux.zip`, `goyim_proxy-macos-arm64.zip` (Apple Silicon) or `goyim_proxy-macos-intel.zip` (Intel) below, unpack it and launch the proxy. The proxy can download and install the mod automatically.
